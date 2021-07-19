@@ -18,10 +18,10 @@ from random import choice
 from urllib.parse import urlparse
 
 import lk21
-import requests
+import requests, cfscrape
 from bs4 import BeautifulSoup
 from js2py import EvalJs
-# from lk21.extractors.bypasser import Bypass
+from lk21.extractors.bypasser import Bypass
 from base64 import standard_b64encode
 
 from tobrot.helper_funcs.exceptions import DirectDownloadLinkException
@@ -65,6 +65,10 @@ def direct_link_generator(text_url: str):
         return sbembed(text_url)
     elif 'streamsb.net' in text_url:
         return streamsb(text_url)
+    elif 'streamtape.com' in text_url:
+        return streamtape(text_url)
+    elif 'antfiles.com' in text_url:
+        return antfiles(text_url)
     elif 'fembed.com' in text_url:
         return fembed(text_url)
     elif '1drv.ms' in text_url:
@@ -186,14 +190,49 @@ def streamsb(url: str) -> str:
         lst_link.append(dl_url[i])
     return lst_link[count-1]    
 
+# def fembed(url: str) -> str:
+#     dl_url = ''
+#     try:
+#         text_url = re.findall(r'\bhttps?://.*fembed\.com\S+', url)[0]
+#     except IndexError:
+#         raise DirectDownloadLinkException("`No Fembed links found`\n")
+#     bypasser = lk21.Bypass()
+#     dl_url=bypasser.bypass_url(text_url)
+#     return dl_url
+
 def fembed(url: str) -> str:
     dl_url = ''
     try:
         text_url = re.findall(r'\bhttps?://.*fembed\.com\S+', url)[0]
     except IndexError:
-        raise DirectDownloadLinkException("`No Fembed links found`\n")
+        raise DirectDownloadLinkException("`No Fembed links found`\n")    
     bypasser = lk21.Bypass()
-    dl_url=bypasser.bypass_url(text_url)
+    dl_url=bypasser.bypass_fembed(text_url)
+    lst_link = []
+    count = len(dl_url)
+    for i in dl_url:
+        lst_link.append(dl_url[i])
+    return lst_link[count-1]
+
+def antfiles(url: str) -> str:
+    dl_url = ''
+    try:
+        text_url = re.findall(r'\bhttps?://.*antfiles\.com\S+', url)[0]
+    except IndexError:
+        raise DirectDownloadLinkException("`No Antfiles links found`\n")
+    bypasser = lk21.Bypass()
+    dl_url=bypasser.bypass_antfiles(text_url)
+    return dl_url
+
+
+def streamtape(url: str) -> str:
+    dl_url = ''
+    try:
+        text_url = re.findall(r'\bhttps?://.*streamtape\.com\S+', url)[0]
+    except IndexError:
+        raise DirectDownloadLinkException("`No Streamtape links found`\n")
+    bypasser = lk21.Bypass()
+    dl_url=bypasser.bypass_streamtape(text_url)
     return dl_url
 
 def onedrive(url: str) -> str:
@@ -327,13 +366,14 @@ def racaty(url: str) -> str:
         text_url = re.findall(r'\bhttps?://.*racaty\.net\S+', url)[0]
     except IndexError:
         raise DirectDownloadLinkException("`No Racaty links found`\n")
-    reqs=requests.get(text_url)
-    bss=BeautifulSoup(reqs.text,'html.parser')
-    op=bss.find('input',{'name':'op'})['value']
-    id=bss.find('input',{'name':'id'})['value']
-    rep=requests.post(text_url,data={'op':op,'id':id})
-    bss2=BeautifulSoup(rep.text,'html.parser')
-    dl_url=bss2.find('a',{'id':'uniqueExpirylink'})['href']
+    scraper = cfscrape.create_scraper()
+    r = scraper.get(url)
+    soup = BeautifulSoup(r.text, "lxml")
+    op = soup.find("input", {"name": "op"})["value"]
+    ids = soup.find("input", {"name": "id"})["value"]
+    rpost = scraper.post(url, data = {"op": op, "id": ids})
+    rsoup = BeautifulSoup(rpost.text, "lxml")
+    dl_url = rsoup.find("a", {"id": "uniqueExpirylink"})["href"].replace(" ", "%20")
     return dl_url
 
 def useragent():
