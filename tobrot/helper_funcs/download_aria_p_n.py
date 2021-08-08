@@ -9,6 +9,10 @@ import sys
 import time
 import requests
 import aria2p
+import re
+from re import search
+import subprocess
+import hashlib
 
 from pyrogram.errors import FloodWait, MessageNotModified
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
@@ -33,10 +37,12 @@ from tobrot.helper_funcs.exceptions import DirectDownloadLinkException
 
 sys.setrecursionlimit(10 ** 4)
 
+
 def KopyasizListe(string):
     kopyasiz = list(string.split(","))
     kopyasiz = list(dict.fromkeys(kopyasiz))
     return kopyasiz
+
 
 def Virgullustring(string):
     string = string.replace("\n\n", ",")
@@ -45,6 +51,7 @@ def Virgullustring(string):
     string = string.rstrip(',')
     string = string.lstrip(',')
     return string
+
 
 tracker_urlsss = [
     "https://newtrackon.com/api/stable",
@@ -64,6 +71,7 @@ for i in range(len(tracker_urlsss)):
 trackerlistemiz = KopyasizListe(Virgullustring(tumtorrenttrackerstringi))
 sonstringtrckr = ','.join(trackerlistemiz)
 
+
 async def aria_start():
     aria2_daemon_start_cmd = []
     # start the daemon, aria2c command
@@ -71,7 +79,7 @@ async def aria_start():
     aria2_daemon_start_cmd.append("--allow-overwrite=true")
     aria2_daemon_start_cmd.append("--daemon=true")
     aria2_daemon_start_cmd.append("--enable-rpc=true")
-    aria2_daemon_start_cmd.append("--netrc-path=/root/.netrc")
+    aria2_daemon_start_cmd.append("--netrc-path=$HOME/.netrc")
     aria2_daemon_start_cmd.append(f"--rpc-listen-port={ARIA_TWO_STARTED_PORT}")
     aria2_daemon_start_cmd.append("--rpc-listen-all=false")
     aria2_daemon_start_cmd.append("--check-certificate=false")
@@ -119,7 +127,8 @@ async def aria_start():
     LOGGER.info(stdout)
     LOGGER.info(stderr)
     aria2 = aria2p.API(
-        aria2p.Client(host="http://localhost", port=ARIA_TWO_STARTED_PORT, secret="")
+        aria2p.Client(host="http://localhost",
+                      port=ARIA_TWO_STARTED_PORT, secret="")
     )
     return aria2
 
@@ -175,30 +184,44 @@ def add_url(aria_instance, text_url, c_file_name):
     #         "dir": c_file_name
     #     }
     if "zippyshare.com" in text_url \
-        or "osdn.net" in text_url \
-        or "mediafire.com" in text_url \
-        or "cloud.mail.ru" in text_url \
-        or "github.com" in text_url \
-        or "yadi.sk" in text_url  \
-        or "letsupload.io" in text_url  \
-        or "hxfile.co" in text_url  \
-        or "layarkacaxxi.icu" in text_url  \
-        or "naniplay.nanime.in" in text_url  \
-        or "naniplay.nanime.biz" in text_url  \
-        or "naniplay.com" in text_url  \
-        or "femax20.com" in text_url  \
-        or "sbembed.com" in text_url  \
-        or "streamsb.net" in text_url  \
-        or "fembed.com" in text_url  \
-        or "antfiles.com" in text_url  \
-        or "streamtape.com" in text_url  \
-        or "1drv.ms" in text_url  \
-        or "racaty.net" in text_url:
-            try:
-                urisitring = direct_link_generator(text_url)
-                uris = [urisitring]
-            except DirectDownloadLinkException as e:
-                LOGGER.info(f'{text_url}: {e}')
+            or "anonfiles.com" in text_url \
+            or "bayfiles.com" in text_url \
+            or "osdn.net" in text_url \
+            or "mediafire.com" in text_url \
+            or "cloud.mail.ru" in text_url \
+            or "github.com" in text_url \
+            or "yadi.sk" in text_url  \
+            or "letsupload.io" in text_url  \
+            or "hxfile.co" in text_url  \
+            or "fembed.com" in text_url  \
+            or "layarkacaxxi.icu" in text_url  \
+            or "naniplay.nanime.in" in text_url  \
+            or "naniplay.nanime.biz" in text_url  \
+            or "naniplay.com" in text_url  \
+            or "femax20.com" in text_url  \
+            or "fcdn.stream" in text_url  \
+            or "feurl.com" in text_url  \
+            or "mxplayer.in" in text_url  \
+            or "sbembed.com" in text_url  \
+            or "sbembed1.com" in text_url  \
+            or "sbembed2.com" in text_url  \
+            or "sbembed3.com" in text_url  \
+            or "sbembed4.com" in text_url  \
+            or "sbplay.one" in text_url  \
+            or "sbplay.org" in text_url  \
+            or "sbcloud1.com" in text_url  \
+            or "streamsb.net" in text_url  \
+            or "antfiles.com" in text_url  \
+            or "streamtape.com" in text_url  \
+            or "1drv.ms" in text_url  \
+            or "solidfiles.com" in text_url  \
+            or "pixeldrain.com" in text_url  \
+            or "racaty.net" in text_url:
+        try:
+            urisitring = direct_link_generator(text_url)
+            uris = [urisitring]
+        except DirectDownloadLinkException as e:
+            LOGGER.info(f'{text_url}: {e}')
     else:
         uris = [text_url]
     # Add URL Into Queue
@@ -225,12 +248,24 @@ async def call_apropriate_function(
     user_message,
     client,
 ):
+    regexp = re.compile(
+        r'^https?:\/\/.*(\.torrent|\/torrent|\/jav.php|nanobytes\.org).*')
     if incoming_link.lower().startswith("magnet:"):
-        sagtus, err_message = add_magnet(aria_instance, incoming_link, c_file_name)
-    elif incoming_link.lower().endswith(".torrent"):
+        sagtus, err_message = add_magnet(
+            aria_instance, incoming_link, c_file_name)
+    elif incoming_link.lower().endswith(".torrent") and not incoming_link.lower().startswith("http"):
         sagtus, err_message = add_torrent(aria_instance, incoming_link)
     else:
-        sagtus, err_message = add_url(aria_instance, incoming_link, c_file_name)
+        if regexp.search(incoming_link):
+            var = incoming_link.encode('utf-8')
+            file = hashlib.md5(var).hexdigest()
+            subprocess.run(
+                f"wget -O /CendrawasihLeech/{file}.torrent '{incoming_link}'", shell=True)
+            sagtus, err_message = add_torrent(
+                aria_instance, f"/CendrawasihLeech/{file}.torrent")
+        else:
+            sagtus, err_message = add_url(
+                aria_instance, incoming_link, c_file_name)
     if not sagtus:
         return sagtus, err_message
     LOGGER.info(err_message)
@@ -238,6 +273,11 @@ async def call_apropriate_function(
     await check_progress_for_dl(
         aria_instance, err_message, sent_message_to_update_tg_p, None
     )
+    await asyncio.sleep(1)
+    file = aria_instance.get_download(err_message)
+    to_upload_file = file.name
+    com_g = file.is_complete
+
     if incoming_link.startswith("magnet:"):
         #
         err_message = await check_metadata(aria_instance, err_message)
@@ -247,13 +287,13 @@ async def call_apropriate_function(
             await check_progress_for_dl(
                 aria_instance, err_message, sent_message_to_update_tg_p, None
             )
-        else:
-            return False, "Can't getting metadata \n\n#MetaDataError"
+    else:
+        return False, "Can't getting metadata \n\n#MetaDataError"
     await asyncio.sleep(1)
     file = aria_instance.get_download(err_message)
     to_upload_file = file.name
     com_g = file.is_complete
-    #
+
     if is_zip:
         check_if_file = await create_archive(to_upload_file)
         if check_if_file is not None:
@@ -274,7 +314,8 @@ async def call_apropriate_function(
     if to_upload_file:
         if CUSTOM_FILE_NAME:
             if os.path.isfile(to_upload_file):
-                os.rename(to_upload_file, f"{CUSTOM_FILE_NAME}{to_upload_file}")
+                os.rename(to_upload_file,
+                          f"{CUSTOM_FILE_NAME}{to_upload_file}")
                 to_upload_file = f"{CUSTOM_FILE_NAME}{to_upload_file}"
             else:
                 for root, _, files in os.walk(to_upload_file):
@@ -321,7 +362,8 @@ async def call_apropriate_function(
                     mention_req_user = (
                         f"<a href='tg://user?id={user_id}'>Done!</a>"
                     )
-                    message_to_send = f"<b>List file in</b> `{downloading_dir_name}`:\n" + message_to_send
+                    message_to_send = f"<b>List file in</b> `{downloading_dir_name}`:\n" + \
+                        message_to_send
                     message_to_send = message_to_send + "\n" + "#Uploading " + mention_req_user
                 else:
                     message_to_send = "<i>FAILED</i> Failed uploading files."

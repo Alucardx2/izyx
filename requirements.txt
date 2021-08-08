@@ -1,12 +1,12 @@
 aiohttp
-aria2p==0.9.1
+aria2p
+python-dotenv
 hachoir
 Pillow
 pyrogram
 tgcrypto
 youtube_dl
 hurry.filesize
-python-dotenv
 beautifulsoup4
 bs4
 lxml
@@ -14,3 +14,4 @@ requests
 js2py
 lk21
 pybase64
+cfscrape
