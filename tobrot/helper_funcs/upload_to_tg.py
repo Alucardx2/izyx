@@ -62,9 +62,9 @@ async def upload_to_tg(
 ):
     base_file_name = os.path.basename(local_file_name)
     caption_str = ""
-    caption_str += "<code>"
+    caption_str += "<b>"
     caption_str += base_file_name
-    caption_str += "</code>"
+    caption_str += "</b>"
     if os.path.isdir(local_file_name):
         directory_contents = os.listdir(local_file_name)
         directory_contents.sort()
@@ -73,7 +73,7 @@ async def upload_to_tg(
         new_m_esg = message
         if not message.photo:
             new_m_esg = await message.reply_text(
-                f"<code>{len(directory_contents)}</code> files in <code>{local_file_name}</code>",
+                f"<b>{len(directory_contents)}</b> files in <code>{local_file_name}</code>",
                 quote=True
                 # reply_to_message_id=message.message_id
             )
@@ -105,7 +105,7 @@ async def upload_to_tg(
             ba_se_file_name = os.path.basename(local_file_name)
             await i_m_s_g.edit_text(
                 f"Detected File Size: `{d_f_s}` \n"
-                f"<code>{ba_se_file_name}</code> splitted into `{number_of_files}` files.\n"
+                f"<b>{ba_se_file_name}</b> splitted into `{number_of_files}` files.\n"
                 "Trying to upload to Telegram, now ..."
             )
             for le_file in totlaa_sleif:
